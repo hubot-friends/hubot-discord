@@ -1,16 +1,18 @@
 import Adapter from 'hubot/src/adapter.js'
 import HubotMessageFromDiscord from './HubotMessageFromDiscord.mjs'
 import EventEmitter from 'node:events'
+import { Events, Embed } from 'discord.js'
+
 const CONTENT_LENGTH_LIMIT = 2_000
 
 class DiscordAdapter extends Adapter {
     constructor(robot, client = new EventEmitter()) {
         super(robot)
         this.client = client
-        this.client.on('error', this.errorHasOccurred.bind(this))
-        this.client.on('messageUpdate', this.messageWasUpdated.bind(this))
-        this.client.on('messageCreate', this.messageWasReceived.bind(this))
-        this.client.once('ready', () => {
+        this.client.on(Events.Error, this.errorHasOccurred.bind(this))
+        this.client.on(Events.MessageUpdate, this.messageWasUpdated.bind(this))
+        this.client.on(Events.MessageCreate, this.messageWasReceived.bind(this))
+        this.client.once(Events.ClientReady, () => {
             this.emit('connected')
         })
     }
@@ -25,13 +27,17 @@ class DiscordAdapter extends Adapter {
     }
     async reply(envelope, ...strings) {
         const tasks = []
-        for await (let message of strings) {
+        for (let message of strings) {
+            if(message instanceof Embed) {
+                tasks.push(envelope.user.message.reply({embeds: [message]}))
+                continue
+            }
             for (let part of this.breakUpMessage(message)) {
                 tasks.push(envelope.user.message.reply(part))
             }
         }
         const responses = await Promise.all(tasks)
-        this.emit('reply', responses)
+        this.emit('reply', envelope, responses)
         return responses
     }
     errorHasOccurred(error) {

@@ -5,6 +5,7 @@ import Module from 'module'
 import { EventEmitter } from 'node:events'
 import { DiscordAdapter } from './src/DiscordAdapter.mjs'
 import init from './index.mjs'
+import { Embed } from 'discord.js'
 
 
 let originalRequire = Module.prototype.require
@@ -125,7 +126,7 @@ describe('Discord Adapter', () => {
             author: {
                 username: 'test-user'
             }
-        })    
+        })
     })
 
     it('Breaks up messages longer than 2000 characters', (t, done) => {
@@ -134,14 +135,15 @@ describe('Discord Adapter', () => {
             message = createParagraphGreaterOfLength(2010)
             await res.reply(message)
         })
-        robot.adapter.on('reply', (actual) => {
+        robot.adapter.on('reply', (envelope, actual) => {
+            if(envelope.room !== 'test-room-1') return
             const expected = robot.adapter.breakUpMessage(message)
             assert.deepEqual(actual.map(m => m.content), expected)
             done()
         })
         client.emit('messageCreate', {
             content: '@test-bot Hello World Break Up',
-            channelId: 'test-room',
+            channelId: 'test-room-1',
             author: {
                 username: 'test-user'
             },
@@ -154,6 +156,39 @@ describe('Discord Adapter', () => {
                 }
             }
         })
+    })
+
+    it('Replies to an Embed message', (t, done) => {
+        const response = new Embed({
+            title: 'Test Embed',
+            description: 'Test Description',
+            fields: [
+                {
+                    name: 'Test Field',
+                    value: 'Test Value'
+                }
+            ],
+            footer: {
+                text: 'Test Footer'
+            }
+        })
+        robot.respond(/Embed message$/, (res) => {
+            res.reply(response)
+        })
+        robot.adapter.on('reply', (envelope, actual) => {
+            if(envelope.room !== 'test-room-2') return
+            done()
+        })
+        client.emit('messageCreate', {
+            content: '@test-bot Embed message',
+            channelId: 'test-room-2',
+            author: {
+                username: 'test-user'
+            },
+            async reply(message) {
+                assert.deepEqual(message.embeds[0], response)
+            }
+        })    
     })
 
 })
