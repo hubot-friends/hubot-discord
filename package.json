@@ -38,5 +38,8 @@
       "next"
     ],
     "dryRun": false
+  },
+  "dependencies": {
+    "discord.js": "^14.12.1"
   }
 }

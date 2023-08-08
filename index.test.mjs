@@ -1,15 +1,14 @@
-import { describe, it } from 'node:test'
+import { describe, it, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import Robot from 'hubot/src/robot.js'
-import Adapter from 'hubot/src/adapter.js'
-import Message from 'hubot/src/message.js'
 import Module from 'module'
 import { EventEmitter } from 'node:events'
+import { DiscordAdapter } from './src/DiscordAdapter.mjs'
+import init from './index.mjs'
 
-const { TextMessage } = Message
 
+let originalRequire = Module.prototype.require
 const hookModuleToReturnMockFromRequire = (module, mock) => {
-  const originalRequire = Module.prototype.require
   Module.prototype.require = function() {
     if (arguments[0] === module) {
       return mock;
@@ -22,59 +21,22 @@ class DiscordClient extends EventEmitter {
     constructor() {
         super()
     }
-}
-
-class HubotMessageFromDiscord extends TextMessage {
-    constructor(message) {
-        super(Object.assign({
-            room: message.channelId,
-            name: message.author.username,
-            message: message
-        }, message.author), message.content, message.channel)
+    async login(token){
+        console.log('logging', token)
+        return token
     }
 }
 
-class DiscordAdapter extends Adapter {
-    constructor(robot, client = new DiscordClient()) {
-        super(robot)
-        this.client = client
-        this.client.on('error', this.errorHasOccurred.bind(this))
-        this.client.on('messageUpdate', this.messageWasUpdated.bind(this))
-        this.client.on('messageCreate', this.messageWasReceived.bind(this))
-    }
-    messageWasUpdated(oldMessage, newMessage) {
-        this.robot.receive(new HubotMessageFromDiscord(newMessage))
-    }
-    messageWasReceived(message) {
-        this.robot.receive(new HubotMessageFromDiscord(message))
-    }
-    send(envelope, ...strings) {
-        this.emit('send', envelope, ...strings)
-    }
-    errorHasOccurred(error) {
-        console.error(error)
-    }
-    update(key, old, value) {
-        console.log('hi', key, old, value)
-    }
-    run() {
-        this.client.once('ready', () => {
-            this.emit('connected')
-        })
-
-    }
-    breakUpMessage(text) {
-        const message = []
-        while (text.length > 0) {
-            message.push(text.slice(0, 2000))
-            text = text.slice(1999)
-        }
-        return message
-    }
+const createParagraphGreaterOfLength = length => {
+  let paragraph = '';
+  while (paragraph.length < length) {
+    paragraph += 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. ';
+  }
+  return paragraph;
 }
 
-describe('Content', () => {
-    it('Limits content to 2000 characters', (t, done) => {
+describe('Unit Tests', () => {
+    it('Breaks up text into 2000 long chunks', (t, done) => {
         const text = 'a'.repeat(2000)
         const adapter = new DiscordAdapter()
         const actual = adapter.breakUpMessage(text)
@@ -84,63 +46,114 @@ describe('Content', () => {
         done()
     })
 })
+describe('Initialize Adapter', () => {
+    before(() => {
+        hookModuleToReturnMockFromRequire('@hubot-friends/hubot-discord', {
+            async use(robot) {
+                return await init(robot)
+            }
+        })
+    })
+    it('Should initialize adapter', (t, done) => {
+        const robot = new Robot('@hubot-friends/hubot-discord', false, 'test-bot', null)
+        robot.config = {
+            DISCORD_TOKEN: 'test-token'
+        }
+        robot.logger.error = e => {
+            assert.deepEqual(e.code, 'TokenInvalid')
+            robot.shutdown()
+            done()
+        }
+        robot.loadAdapter('./index.mjs').then(() => {
+            assert.ok(robot.adapter instanceof DiscordAdapter)
+            robot.run()
+        })
+    })
+})
+
 describe('Discord Adapter', () => {
-    it('Respond to @test-bot Hello World', (t, done) => {
-        const client = new DiscordClient()
+    let robot = null
+    let client = null
+    before(async () => {
         hookModuleToReturnMockFromRequire('@hubot-friends/hubot-discord', {
             use(robot) {
                 return new DiscordAdapter(robot, client)
             }
         })
-        const robot = new Robot('@hubot-friends/hubot-discord', false, 'test-bot', null)
-        robot.loadAdapter().then(() => {
-            robot.run()
-            robot.respond(/Hello World/, (res) => {
-                assert.equal(res.message.text, '@test-bot Hello World')
-                robot.shutdown()
-                done()
-            })
-            client.emit('ready')
-            client.emit('messageCreate', {
-                content: '@test-bot Hello World',
-                channelId: 'test-room',
-                author: {
-                    username: 'test-user'
-                }
-            })    
+        client = new DiscordClient()
+        robot = new Robot('@hubot-friends/hubot-discord', false, 'test-bot', null)
+        robot.config = {
+            DISCORD_TOKEN: 'test-token'
+        }
+        await robot.loadAdapter()
+        robot.run()
+        client.emit('ready')
+    })
+    after(() => {
+        robot.shutdown()
+    })
+
+    it('Respond to @test-bot Hello World', (t, done) => {
+        robot.respond(/Hello World$/, (res) => {
+            assert.equal(res.message.text, '@test-bot Hello World')
+            done()
         })
+        client.emit('messageCreate', {
+            content: '@test-bot Hello World',
+            channelId: 'test-room',
+            author: {
+                username: 'test-user'
+            }
+        })    
     })
 
     it('Responds to updating message', (t, done) => {
-        const client = new DiscordClient()
-        hookModuleToReturnMockFromRequire('@hubot-friends/hubot-discord', {
-            use(robot) {
-                return new DiscordAdapter(robot, client)
+        robot.respond(/Hello World Update/, (res) => {
+            assert.equal(res.message.text, '@test-bot Hello World Update')
+            done()
+        })
+        client.emit('messageUpdate', {
+            content: '@test-bot Hello world',
+            channelId: 'test-room',
+            author: {
+                username: 'test-user'
+            }
+        },
+        {
+            content: '@test-bot Hello World Update',
+            channelId: 'test-room',
+            author: {
+                username: 'test-user'
+            }
+        })    
+    })
+
+    it('Breaks up messages longer than 2000 characters', (t, done) => {
+        let message = null
+        robot.respond(/Hello World Break Up/, async res => {
+            message = createParagraphGreaterOfLength(2010)
+            await res.reply(message)
+        })
+        robot.adapter.on('reply', (actual) => {
+            const expected = robot.adapter.breakUpMessage(message)
+            assert.deepEqual(actual.map(m => m.content), expected)
+            done()
+        })
+        client.emit('messageCreate', {
+            content: '@test-bot Hello World Break Up',
+            channelId: 'test-room',
+            author: {
+                username: 'test-user'
+            },
+            async reply(message) {
+                return {
+                    content: message,
+                    toString() {
+                        return message
+                    }
+                }
             }
         })
-        const robot = new Robot('@hubot-friends/hubot-discord', false, 'test-bot', null)
-        robot.loadAdapter().then(() => {
-            robot.run()
-            robot.respond(/Hello World/, (res) => {
-                assert.equal(res.message.text, '@test-bot Hello World')
-                robot.shutdown()
-                done()
-            })
-            client.emit('ready')
-            client.emit('messageUpdate', {
-                content: '@test-bot Hello world',
-                channelId: 'test-room',
-                author: {
-                    username: 'test-user'
-                }
-            },
-            {
-                content: '@test-bot Hello World',
-                channelId: 'test-room',
-                author: {
-                    username: 'test-user'
-                }
-            })    
-        })
     })
+
 })
