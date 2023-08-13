@@ -1,7 +1,7 @@
 import Adapter from 'hubot/src/adapter.js'
 import HubotMessageFromDiscord from './HubotMessageFromDiscord.mjs'
 import EventEmitter from 'node:events'
-import { Events, Embed } from 'discord.js'
+import { Events, Embed, EmbedBuilder, AttachmentBuilder, MessagePayload } from 'discord.js'
 
 const CONTENT_LENGTH_LIMIT = 2_000
 
@@ -28,10 +28,33 @@ class DiscordAdapter extends Adapter {
     async reply(envelope, ...strings) {
         const tasks = []
         for (let message of strings) {
-            if(message instanceof Embed) {
+            if(message instanceof Embed || message instanceof EmbedBuilder) {
                 tasks.push(envelope.user.message.reply({embeds: [message]}))
                 continue
             }
+
+            if(message instanceof AttachmentBuilder) {
+                resp.push(envelope.user.message.reply({ files: [message] }))
+                continue
+            }
+
+            if(typeof message == 'object') {   
+                if(message.files){
+                    let files = message.files.map(f => {
+                        let a = new AttachmentBuilder(f.file)
+                        a.setName(f.name)
+                        a.setDescription(f.description)
+                        return a
+                    })
+                    tasks.push(envelope.user.message.reply({files: files}))
+                } else {
+                    let payload = new MessagePayload(envelope.user.message, message)
+                    payload = Object.assign(payload, message)
+                    tasks.push(envelope.user.message.reply(payload))
+                }
+                continue
+            }
+
             for (let part of this.breakUpMessage(message)) {
                 tasks.push(envelope.user.message.reply(part))
             }

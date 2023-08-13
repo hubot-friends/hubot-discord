@@ -5,7 +5,7 @@ import Module from 'module'
 import { EventEmitter } from 'node:events'
 import { DiscordAdapter } from './src/DiscordAdapter.mjs'
 import init from './index.mjs'
-import { Embed } from 'discord.js'
+import { Embed, EmbedBuilder, AttachmentBuilder, MessagePayload } from 'discord.js'
 
 
 let originalRequire = Module.prototype.require
@@ -23,7 +23,6 @@ class DiscordClient extends EventEmitter {
         super()
     }
     async login(token){
-        console.log('logging', token)
         return token
     }
 }
@@ -158,7 +157,7 @@ describe('Discord Adapter', () => {
         })
     })
 
-    it('Replies to an Embed message', (t, done) => {
+    it('Replies with an Embed message', (t, done) => {
         const response = new Embed({
             title: 'Test Embed',
             description: 'Test Description',
@@ -189,6 +188,137 @@ describe('Discord Adapter', () => {
                 assert.deepEqual(message.embeds[0], response)
             }
         })    
+    })
+
+    it('Replies with an EmbedBuilder message', (t, done) => {
+        const response = new EmbedBuilder()
+            .setTitle('Test Embed')
+            .setDescription('Test Description')
+            .addFields([
+                {
+                    name: 'Test Field',
+                    value: 'Test Value'
+                }
+            ])
+
+        robot.respond(/EmbedBuilder message$/, (res) => {
+            res.reply(response)
+        })
+
+        robot.adapter.on('reply', (envelope, actual) => {
+            if(envelope.room !== 'test-room-2.5') return
+            done()
+        })
+
+        client.emit('messageCreate', {
+            content: '@test-bot EmbedBuilder message',
+            channelId: 'test-room-2.5',
+            author: {
+                username: 'test-user'
+            },
+            async reply(message) {
+                assert.ok(message.embeds[0] instanceof EmbedBuilder)
+            }
+        })
+    })
+
+    it("When you don't want to use a `discord.js` Class to just send files, you can send a payload with a files away instead.", (t, done) => {
+        const message = {
+            channelId: 'test-room-3',
+            guildId: 'test-guild',
+            id: 'test-id',
+            content: '@test-bot Send a file',
+            author: {
+                username: 'test-user'
+            },
+            attachments: new Map(),
+            async reply(message) {
+                assert.ok(message.files[0] instanceof AttachmentBuilder)
+            }
+        }
+        message.attachments.set('test-file.png', {
+            '1140091176209363044': {
+                url: 'https://cdn.discordapp.com/attachments/1023316778450964534/1140091176209363044/image.png'
+            }
+        })
+
+        robot.respond(/Send a file$/, (res) => {
+            const payload = {
+                files: [{
+                    file: Buffer.from('test', 'utf-8'),
+                    name: 'test.ico',
+                    description: `test.ico as an ICO file.`
+                }]
+            }
+            res.reply(payload)
+        })
+        robot.adapter.on('reply', (envelope, actual) => {
+            if(envelope.room !== 'test-room-3') return
+            done()
+        })
+        client.emit('messageCreate', message)    
+    })
+
+    it("If you want to use `discord.js`'s AttachmentBuilder to reply with files.", (t, done) => {
+        const message = {
+            channelId: 'test-room-4',
+            guildId: 'test-guild',
+            id: 'test-id',
+            content: '@test-bot Reply with AttachmentBuilder',
+            author: {
+                username: 'test-user'
+            },
+            attachments: new Map(),
+            async reply(message) {
+                assert.ok(message.files[0] instanceof AttachmentBuilder)
+            }
+        }
+        message.attachments.set('test-file.png', {
+            '12341234123': {
+                url: 'https://cdn.discordapp.com/attachments/12341234213/12431234213/image.png'
+            }
+        })
+
+        robot.respond(/Reply with AttachmentBuilder$/, (res) => {
+            const payload = {
+                files: [{
+                    file: Buffer.from('test', 'utf-8'),
+                    name: 'test.ico',
+                    description: `test.ico as an ICO file.`
+                }]
+            }
+            res.reply(payload)
+        })
+        robot.adapter.on('reply', (envelope, actual) => {
+            if(envelope.room !== 'test-room-4') return
+            done()
+        })
+        client.emit('messageCreate', message)    
+    })
+
+    it('Replying with an object that has a body property should result in a MessagePayload being sent to Discord', (t, done) => {
+        const message = {
+            channelId: 'test-room-5',
+            guildId: 'test-guild',
+            id: 'test-id',
+            content: '@test-bot Reply with an object that has a body property',
+            author: {
+                username: 'test-user'
+            },
+            async reply(message) {
+                assert.ok(message instanceof MessagePayload)
+            }
+        }
+        robot.respond(/Reply with an object that has a body property$/, (res) => {
+            res.reply({
+                body: 'Helo worlds'
+            })
+        })
+        robot.adapter.on('reply', (envelope, actual) => {
+            if(envelope.room !== 'test-room-5') return
+            done()
+        })
+        client.emit('messageCreate', message)    
     })
 
 })
