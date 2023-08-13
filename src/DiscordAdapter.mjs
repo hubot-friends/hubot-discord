@@ -22,19 +22,27 @@ class DiscordAdapter extends Adapter {
     messageWasReceived(message) {
         this.robot.receive(new HubotMessageFromDiscord(message))
     }
-    send(envelope, ...strings) {
-        this.emit('send', envelope, ...strings)
+    async send(envelope, ...strings) {
+        const channel = this.client.channels.cache.get(envelope.room)
+        const responses = await this.sendWithDelegate(channel.send, envelope, ...strings)
+        this.emit('send', envelope, responses)
+        return responses
     }
     async reply(envelope, ...strings) {
+        const responses = await this.sendWithDelegate(envelope.user.message.reply, envelope, ...strings)
+        this.emit('reply', envelope, responses)
+        return responses
+    }
+    async sendWithDelegate(delegate, envelope, ...strings) {
         const tasks = []
         for (let message of strings) {
             if(message instanceof Embed || message instanceof EmbedBuilder) {
-                tasks.push(envelope.user.message.reply({embeds: [message]}))
+                tasks.push(delegate({embeds: [message]}))
                 continue
             }
 
             if(message instanceof AttachmentBuilder) {
-                resp.push(envelope.user.message.reply({ files: [message] }))
+                resp.push(delegate({ files: [message] }))
                 continue
             }
 
@@ -46,23 +54,23 @@ class DiscordAdapter extends Adapter {
                         a.setDescription(f.description)
                         return a
                     })
-                    tasks.push(envelope.user.message.reply({files: files}))
+                    tasks.push(delegate({files: files}))
                 } else {
                     let payload = new MessagePayload(envelope.user.message, message)
                     payload = Object.assign(payload, message)
-                    tasks.push(envelope.user.message.reply(payload))
+                    tasks.push(delegate(payload))
                 }
                 continue
             }
 
             for (let part of this.breakUpMessage(message)) {
-                tasks.push(envelope.user.message.reply(part))
+                tasks.push(delegate(part))
             }
         }
         const responses = await Promise.all(tasks)
-        this.emit('reply', envelope, responses)
         return responses
     }
+
     errorHasOccurred(error) {
         console.error(error)
     }
