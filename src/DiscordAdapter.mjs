@@ -24,12 +24,12 @@ class DiscordAdapter extends Adapter {
     }
     async send(envelope, ...strings) {
         const channel = this.client.channels.cache.get(envelope.room)
-        const responses = await this.sendWithDelegate(channel.send, envelope, ...strings)
+        const responses = await this.sendWithDelegate(channel.send.bind(channel), envelope, ...strings)
         this.emit('send', envelope, responses)
         return responses
     }
     async reply(envelope, ...strings) {
-        const responses = await this.sendWithDelegate(envelope.user.message.reply, envelope, ...strings)
+        const responses = await this.sendWithDelegate(envelope.user.message.reply.bind(envelope.user.message), envelope, ...strings)
         this.emit('reply', envelope, responses)
         return responses
     }
