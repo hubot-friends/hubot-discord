@@ -39,6 +39,9 @@
     ],
     "dryRun": false
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "discord.js": "^14.12.1"
   }
