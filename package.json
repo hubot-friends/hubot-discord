@@ -1,6 +1,6 @@
 {
-  "name": "hubot-discord",
-  "version": "0.0.1",
+  "name": "@hubot-friends/hubot-discord",
+  "version": "0.0.0-development",
   "description": "A new Discord adapter for Hubot",
   "main": "index.mjs",
   "scripts": {
