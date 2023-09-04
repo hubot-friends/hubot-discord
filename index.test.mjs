@@ -225,7 +225,7 @@ describe('Discord Adapter', () => {
         })
     })
 
-    it("When you don't want to use a `discord.js` Class to just send files, you can send a payload with a files away instead.", (t, done) => {
+    it("When you don't want to use a `discord.js` Class to just send files, you can send a payload with a files array instead.", (t, done) => {
         const message = {
             channelId: 'test-room-3',
             guildId: 'test-guild',
