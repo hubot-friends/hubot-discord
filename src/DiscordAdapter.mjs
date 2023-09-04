@@ -101,7 +101,7 @@ class DiscordAdapter extends Adapter {
         console.log('hi', key, old, value)
     }
     run() {
-        return this.client.login(this.robot.config.DISCORD_TOKEN)
+        return this.client.login(this.robot.config.HUBOT_DISCORD_TOKEN)
             .then(() => this.robot.logger.info('Successfully logged in'))
             .catch(e => this.robot.logger.error(e, 'Failed to log in'))
     }

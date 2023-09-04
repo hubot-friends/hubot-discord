@@ -91,7 +91,7 @@ describe('Initialize Adapter', () => {
     it('Should initialize adapter', (t, done) => {
         const robot = new Robot('@hubot-friends/hubot-discord', false, 'test-bot', null)
         robot.config = {
-            DISCORD_TOKEN: 'test-token'
+            HUBOT_DISCORD_TOKEN: 'test-token'
         }
         robot.logger.error = e => {
             assert.deepEqual(e.code, 'TokenInvalid')
@@ -117,7 +117,7 @@ describe('Discord Adapter', () => {
         client = new DiscordClient()
         robot = new Robot('@hubot-friends/hubot-discord', false, 'test-bot', null)
         robot.config = {
-            DISCORD_TOKEN: 'test-token'
+            HUBOT_DISCORD_TOKEN: 'test-token'
         }
         await robot.loadAdapter()
         robot.run()
@@ -368,7 +368,7 @@ describe('Access Control', () => {
         client = new DiscordClient()
         robot = new Robot('@hubot-friends/hubot-discord', false, 'test-bot', null)
         robot.config = {
-            DISCORD_TOKEN: 'test-token'
+            HUBOT_DISCORD_TOKEN: 'test-token'
         }
         await robot.loadAdapter()
         robot.run()
