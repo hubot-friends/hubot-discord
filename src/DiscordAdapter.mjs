@@ -116,6 +116,11 @@ class DiscordAdapter extends Adapter {
         }
         return message
     }
+    async isInRole(user, roles, guildId) {
+        const guild = this.client.guilds.cache.get(guildId)
+        const member = await guild.members.fetch(user.id)
+        return member.roles.cache.some(role => roles.some(r => r.toLowerCase() == role.name.toLowerCase()))
+    }
 }
 export {
     DiscordAdapter
