@@ -21,6 +21,9 @@ const hookModuleToReturnMockFromRequire = (module, mock) => {
 class DiscordClient extends EventEmitter {
     constructor() {
         super()
+        this.user = {
+            id: 'test-bot'
+        }
     }
     async login(token){
         return token

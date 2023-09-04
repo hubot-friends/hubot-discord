@@ -1,9 +1,18 @@
 import Adapter from 'hubot/src/adapter.js'
-import HubotMessageFromDiscord from './HubotMessageFromDiscord.mjs'
 import EventEmitter from 'node:events'
-import { Events, Embed, EmbedBuilder, AttachmentBuilder, MessagePayload } from 'discord.js'
-
+import { Events, ShardEvents, Embed, EmbedBuilder, AttachmentBuilder, MessagePayload } from 'discord.js'
+import { TextMessage } from 'hubot/src/message.js'
 const CONTENT_LENGTH_LIMIT = 2_000
+
+const mapToTextMessage = (message, botName, client) => {
+    const content = message.content.replace(`<@${client?.user?.id}> `, `@${botName} `)
+    const user = Object.assign({
+        room: message.channelId,
+        name: message.author.username,
+        message: message
+    }, message.author)
+    return new TextMessage(user, content, message.id, message)
+}
 
 class DiscordAdapter extends Adapter {
     constructor(robot, client = new EventEmitter()) {
@@ -12,15 +21,29 @@ class DiscordAdapter extends Adapter {
         this.client.on(Events.Error, this.errorHasOccurred.bind(this))
         this.client.on(Events.MessageUpdate, this.messageWasUpdated.bind(this))
         this.client.on(Events.MessageCreate, this.messageWasReceived.bind(this))
+        this.client.on(ShardEvents.Message, this.messageWasReceived.bind(this))
         this.client.once(Events.ClientReady, () => {
             this.emit('connected')
         })
     }
+    #wasToBot(message, botId) {
+        return message.mentions && !message.mentions.users.find(u => u.id == botId)
+    }
     messageWasUpdated(oldMessage, newMessage) {
-        this.robot.receive(new HubotMessageFromDiscord(newMessage))
+        if(newMessage.author.bot) return
+        if(this.#wasToBot(newMessage, this.client.user.id)) return
+        this.robot.receive(mapToTextMessage(newMessage, this.robot.name || this.robot.alias, this.client))
     }
     messageWasReceived(message) {
-        this.robot.receive(new HubotMessageFromDiscord(message))
+        if(message.author.bot) return
+        if(!message.guildId && message.content.indexOf(this.client.user.id) == -1) {
+            message.content = `<@${this.client.user.id}> ${message.content}`
+            message.mentions.users.set(this.client.user.id, this.client.user)
+        }
+
+        if(this.#wasToBot(message, this.client.user.id)) return
+        const textMessage = mapToTextMessage(message, this.robot.name || this.robot.alias, this.client)
+        this.robot.receive(textMessage)
     }
     async send(envelope, ...strings) {
         const channel = this.client.channels.cache.get(envelope.room)
