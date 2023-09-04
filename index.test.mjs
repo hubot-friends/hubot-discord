@@ -17,13 +17,44 @@ const hookModuleToReturnMockFromRequire = (module, mock) => {
     return originalRequire.apply(this, arguments)
   }
 }
-
+class GuildMemberManager {
+    #cache = new Map()
+    constructor(guild) {
+        this.guild = guild
+        this.#cache.set('test-user-id', {
+            roles: {
+                cache: [
+                    {
+                        name: 'allowed'
+                    }
+                ]
+            }
+        })
+    }
+    async fetch(options) {
+        return this.#cache.get(options)
+    }
+}
+class Guild {
+    constructor(client) {
+        this.client = client
+        this.members = new GuildMemberManager(this)
+    }
+}
+class GuildManager {
+    constructor(client) {
+        this.client = client
+        this.cache = new Map()
+    }
+}
 class DiscordClient extends EventEmitter {
     constructor() {
         super()
         this.user = {
             id: 'test-bot'
         }
+        this.guilds = new GuildManager(this)
+        this.guilds.cache.set('test-guild', new Guild(this))
     }
     async login(token){
         return token
@@ -323,5 +354,48 @@ describe('Discord Adapter', () => {
         })
         client.emit('messageCreate', message)    
     })
+})
 
+describe('Access Control', () => {
+    let robot = null
+    let client = null
+    before(async () => {
+        hookModuleToReturnMockFromRequire('@hubot-friends/hubot-discord', {
+            use(robot) {
+                return new DiscordAdapter(robot, client)
+            }
+        })
+        client = new DiscordClient()
+        robot = new Robot('@hubot-friends/hubot-discord', false, 'test-bot', null)
+        robot.config = {
+            DISCORD_TOKEN: 'test-token'
+        }
+        await robot.loadAdapter()
+        robot.run()
+        client.emit('ready')
+    })
+    after(() => {
+        robot.shutdown()
+    })
+
+    it('Check if user is in a particular role', (t, done) => {
+        const message = {
+            channelId: 'test-room-6',
+            guildId: 'test-guild',
+            id: 'test-id',
+            content: '@test-bot allowed message',
+            author: {
+                username: 'test-user',
+                id: 'test-user-id'
+            },
+            async reply(message) {
+                assert.ok(message instanceof MessagePayload)
+            }
+        }
+        robot.respond(/allowed message/, async res => {
+            assert.ok(await res.robot.adapter.isInRole(res.message.user, ['allowed'], res.message.user.message.guildId))
+            done()
+        })
+        client.emit('messageCreate', message)
+    })
 })
