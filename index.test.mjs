@@ -106,7 +106,7 @@ describe('Initialize Adapter', () => {
     it('Should initialize adapter but get an invalid token error', async () => {
         const robot = new Robot('@hubot-friends/hubot-discord', false, 'test-bot', null)
         robot.config = {
-            DISCORD_TOKEN: 'test-token'
+            HUBOT_DISCORD_TOKEN: 'test-token'
         }
         await robot.loadAdapter('./index.mjs')
         assert.ok(robot.adapter instanceof DiscordAdapter)
@@ -163,7 +163,7 @@ describe('Discord Adapter', () => {
         client = new DiscordClient()
         robot = new Robot('@hubot-friends/hubot-discord', false, 'test-bot', null)
         robot.config = {
-            DISCORD_TOKEN: 'test-token'
+            HUBOT_DISCORD_TOKEN: 'test-token'
         }
         await robot.loadAdapter()
         await robot.run()
@@ -414,7 +414,7 @@ describe('Access Control', () => {
         client = new DiscordClient()
         robot = new Robot('@hubot-friends/hubot-discord', false, 'test-bot', null)
         robot.config = {
-            DISCORD_TOKEN: 'test-token'
+            HUBOT_DISCORD_TOKEN: 'test-token'
         }
         await robot.loadAdapter()
         await robot.run()

@@ -3,7 +3,7 @@ import { Client, GatewayIntentBits, Partials } from 'discord.js'
 export default {
     async use(robot) {
         robot.config = {
-            DISCORD_TOKEN: process.env.DISCORD_TOKEN ?? null
+            HUBOT_DISCORD_TOKEN: process.env.HUBOT_DISCORD_TOKEN ?? null
         }
         const client = new Client({intents: [
             GatewayIntentBits.Guilds,
