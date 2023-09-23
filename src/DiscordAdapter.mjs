@@ -100,10 +100,14 @@ class DiscordAdapter extends Adapter {
     update(key, old, value) {
         console.log('hi', key, old, value)
     }
-    run() {
-        return this.client.login(this.robot.config.DISCORD_TOKEN)
-            .then(() => this.robot.logger.info('Successfully logged in'))
-            .catch(e => this.robot.logger.error(e, 'Failed to log in'))
+    async run() {
+        try {
+            await this.client.login(this.robot.config.DISCORD_TOKEN)
+            this.robot.logger.info('Successfully logged in')
+        } catch (error) {
+            this.robot.logger.error(error, 'Failed to log in')
+            throw error
+        }
     }
     async close () {
         await this.client.destroy()

@@ -61,6 +61,21 @@ class DiscordClient extends EventEmitter {
     }
 }
 
+class DiscordClientFailsOnLogin extends EventEmitter {
+    #errorMessage = null
+    constructor(options) {
+        super()
+        this.user = {
+            id: 'test-bot'
+        }
+        this.guilds = new GuildManager(this)
+        this.guilds.cache.set('test-guild', new Guild(this))
+        this.#errorMessage = options?.errorMessage ?? 'getaddrinfo EAI_AGAIN discord.com discord.com'
+    }
+    async login(token){
+        throw new Error(this.#errorMessage)
+    }
+}
 const createParagraphGreaterOfLength = length => {
   let paragraph = '';
   while (paragraph.length < length) {
@@ -88,23 +103,54 @@ describe('Initialize Adapter', () => {
             }
         })
     })
-    it('Should initialize adapter', (t, done) => {
+    it('Should initialize adapter but get an invalid token error', async () => {
         const robot = new Robot('@hubot-friends/hubot-discord', false, 'test-bot', null)
         robot.config = {
             DISCORD_TOKEN: 'test-token'
         }
-        robot.logger.error = e => {
-            assert.deepEqual(e.code, 'TokenInvalid')
+        await robot.loadAdapter('./index.mjs')
+        assert.ok(robot.adapter instanceof DiscordAdapter)
+        let actual = ''
+        try {
+            await robot.run()
+        } catch (error) {
+            actual = error.message
+        } finally {
             robot.shutdown()
-            done()
         }
-        robot.loadAdapter('./index.mjs').then(() => {
-            assert.ok(robot.adapter instanceof DiscordAdapter)
-            robot.run()
-        })
+        assert.match(actual, /invalid token/ig)
     })
 })
 
+describe('Throws an error when logging in', () => {
+    let robot = null
+    let client = null
+    before(async () => {
+        hookModuleToReturnMockFromRequire('@hubot-friends/hubot-discord', {
+            use(robot) {
+                return new DiscordAdapter(robot, client)
+            }
+        })
+        client = new DiscordClientFailsOnLogin()
+        robot = new Robot('@hubot-friends/hubot-discord', false, 'test-bot', null)
+        robot.config = {
+            DISCORD_TOKEN: 'test-token'
+        }
+        await robot.loadAdapter()
+    })
+    after(() => {
+        robot.shutdown()
+    })
+    it('Should throw an EAI_AGAIN error', async () => {
+        let actual = ''
+        try {
+            await robot.run()
+        } catch (error) {
+            actual = error.message
+        }
+        assert.equal(actual, 'getaddrinfo EAI_AGAIN discord.com discord.com')
+    })
+})
 describe('Discord Adapter', () => {
     let robot = null
     let client = null
@@ -120,7 +166,7 @@ describe('Discord Adapter', () => {
             DISCORD_TOKEN: 'test-token'
         }
         await robot.loadAdapter()
-        robot.run()
+        await robot.run()
         client.emit('ready')
     })
     after(() => {
@@ -371,7 +417,7 @@ describe('Access Control', () => {
             DISCORD_TOKEN: 'test-token'
         }
         await robot.loadAdapter()
-        robot.run()
+        await robot.run()
         client.emit('ready')
     })
     after(() => {
