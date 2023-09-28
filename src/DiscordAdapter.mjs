@@ -102,7 +102,7 @@ class DiscordAdapter extends Adapter {
     }
     async run() {
         try {
-            await this.client.login(this.robot.config.DISCORD_TOKEN)
+            await this.client.login(this.robot.config.HUBOT_DISCORD_TOKEN)
             this.robot.logger.info('Successfully logged in')
         } catch (error) {
             this.robot.logger.error(error, 'Failed to log in')

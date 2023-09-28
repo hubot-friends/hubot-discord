@@ -134,7 +134,7 @@ describe('Throws an error when logging in', () => {
         client = new DiscordClientFailsOnLogin()
         robot = new Robot('@hubot-friends/hubot-discord', false, 'test-bot', null)
         robot.config = {
-            DISCORD_TOKEN: 'test-token'
+            HUBOT_DISCORD_TOKEN: 'test-token'
         }
         await robot.loadAdapter()
     })
