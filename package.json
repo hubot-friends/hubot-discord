@@ -1,6 +1,6 @@
 {
   "name": "@hubot-friends/hubot-discord",
-  "version": "3.0.0",
+  "version": "0.0.0-development",
   "description": "A new Discord adapter for Hubot",
   "main": "index.mjs",
   "scripts": {
@@ -26,11 +26,10 @@
   },
   "homepage": "https://github.com/hubot-friends/hubot-discord#readme",
   "peerDependencies": {
-    "hubot": ">= 9.0.0"
+    "hubot": ">= 11"
   },
   "engines": {
-    "node": ">= 18.17.0",
-    "npm": ">= 9.5.1"
+    "node": ">= 18"
   },
   "release": {
     "branches": [
@@ -43,6 +42,6 @@
     "access": "public"
   },
   "dependencies": {
-    "discord.js": "^14.12.1"
+    "discord.js": "^14.14.1"
   }
 }

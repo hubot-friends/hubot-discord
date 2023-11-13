@@ -1,7 +1,6 @@
-import Adapter from 'hubot/src/adapter.js'
 import EventEmitter from 'node:events'
 import { Events, ShardEvents, Embed, EmbedBuilder, AttachmentBuilder, MessagePayload } from 'discord.js'
-import { TextMessage } from 'hubot/src/message.js'
+import { TextMessage, Adapter } from 'hubot'
 const CONTENT_LENGTH_LIMIT = 2_000
 
 const mapToTextMessage = (message, botName, client) => {

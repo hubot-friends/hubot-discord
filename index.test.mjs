@@ -1,22 +1,10 @@
 import { describe, it, before, after } from 'node:test'
 import assert from 'node:assert/strict'
-import Robot from 'hubot/src/robot.js'
-import Module from 'module'
+import { Robot } from 'hubot'
 import { EventEmitter } from 'node:events'
 import { DiscordAdapter } from './src/DiscordAdapter.mjs'
-import init from './index.mjs'
 import { Embed, EmbedBuilder, AttachmentBuilder, MessagePayload } from 'discord.js'
 
-
-let originalRequire = Module.prototype.require
-const hookModuleToReturnMockFromRequire = (module, mock) => {
-  Module.prototype.require = function() {
-    if (arguments[0] === module) {
-      return mock;
-    }
-    return originalRequire.apply(this, arguments)
-  }
-}
 class GuildMemberManager {
     #cache = new Map()
     constructor(guild) {
@@ -75,6 +63,9 @@ class DiscordClientFailsOnLogin extends EventEmitter {
     async login(token){
         throw new Error(this.#errorMessage)
     }
+    destroy () {
+        
+    }
 }
 const createParagraphGreaterOfLength = length => {
   let paragraph = '';
@@ -96,19 +87,18 @@ describe('Unit Tests', () => {
     })
 })
 describe('Initialize Adapter', () => {
-    before(() => {
-        hookModuleToReturnMockFromRequire('@hubot-friends/hubot-discord', {
-            async use(robot) {
-                return await init(robot)
-            }
-        })
-    })
     it('Should initialize adapter but get an invalid token error', async () => {
-        const robot = new Robot('@hubot-friends/hubot-discord', false, 'test-bot', null)
-        robot.config = {
-            HUBOT_DISCORD_TOKEN: 'test-token'
-        }
-        await robot.loadAdapter('./index.mjs')
+        const client = new DiscordClientFailsOnLogin({errorMessage: 'invalid token'})
+        const robot = new Robot({
+            async use(robot) {
+                robot.config = {
+                    HUBOT_DISCORD_TOKEN: 'test-token'
+                }
+                const adapter = new DiscordAdapter(robot, client)
+                return adapter
+            }
+        }, false, 'test-bot', null)
+        await robot.loadAdapter()
         assert.ok(robot.adapter instanceof DiscordAdapter)
         let actual = ''
         try {
@@ -126,22 +116,22 @@ describe('Throws an error when logging in', () => {
     let robot = null
     let client = null
     before(async () => {
-        hookModuleToReturnMockFromRequire('@hubot-friends/hubot-discord', {
-            use(robot) {
-                return new DiscordAdapter(robot, client)
-            }
-        })
         client = new DiscordClientFailsOnLogin()
-        robot = new Robot('@hubot-friends/hubot-discord', false, 'test-bot', null)
-        robot.config = {
-            HUBOT_DISCORD_TOKEN: 'test-token'
-        }
+        robot = new Robot({
+            async use(robot) {
+                robot.config = {
+                    HUBOT_DISCORD_TOKEN: 'test-token'
+                }
+                const adapter = new DiscordAdapter(robot, client)
+                return adapter
+            }
+        }, false, 'test-bot', null)
         await robot.loadAdapter()
     })
     after(() => {
         robot.shutdown()
     })
-    it('Should throw an EAI_AGAIN error', async () => {
+    it('Should throw An invalid token was provided error', async () => {
         let actual = ''
         try {
             await robot.run()
@@ -155,16 +145,16 @@ describe('Discord Adapter', () => {
     let robot = null
     let client = null
     before(async () => {
-        hookModuleToReturnMockFromRequire('@hubot-friends/hubot-discord', {
-            use(robot) {
-                return new DiscordAdapter(robot, client)
-            }
-        })
         client = new DiscordClient()
-        robot = new Robot('@hubot-friends/hubot-discord', false, 'test-bot', null)
-        robot.config = {
-            HUBOT_DISCORD_TOKEN: 'test-token'
-        }
+        robot = new Robot({
+            async use(robot) {
+                robot.config = {
+                    HUBOT_DISCORD_TOKEN: 'test-token'
+                }
+                const adapter = new DiscordAdapter(robot, client)
+                return adapter
+            }
+        }, false, 'test-bot', null)
         await robot.loadAdapter()
         await robot.run()
         client.emit('ready')
@@ -406,16 +396,16 @@ describe('Access Control', () => {
     let robot = null
     let client = null
     before(async () => {
-        hookModuleToReturnMockFromRequire('@hubot-friends/hubot-discord', {
-            use(robot) {
-                return new DiscordAdapter(robot, client)
-            }
-        })
         client = new DiscordClient()
-        robot = new Robot('@hubot-friends/hubot-discord', false, 'test-bot', null)
-        robot.config = {
-            HUBOT_DISCORD_TOKEN: 'test-token'
-        }
+        robot = new Robot({
+            async use(robot) {
+                robot.config = {
+                    HUBOT_DISCORD_TOKEN: 'test-token'
+                }
+                const adapter = new DiscordAdapter(robot, client)
+                return adapter
+            }
+        }, false, 'test-bot', null)
         await robot.loadAdapter()
         await robot.run()
         client.emit('ready')
