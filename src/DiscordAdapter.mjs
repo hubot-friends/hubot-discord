@@ -64,7 +64,7 @@ class DiscordAdapter extends Adapter {
             }
 
             if(message instanceof AttachmentBuilder) {
-                resp.push(delegate({ files: [message] }))
+                tasks.push(delegate({ files: [message] }))
                 continue
             }
 
