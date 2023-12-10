@@ -77,7 +77,7 @@ class DiscordAdapter extends Adapter {
                         return a
                     })
                     while(files.length > 0) {
-                        const batch = files.splice(-files.length, DISCORD_ATTACHMENT_LIMIT)
+                        const batch = files.splice(0, DISCORD_ATTACHMENT_LIMIT)
                         tasks.push(delegate({files: batch}))
                     }
                 } else {
