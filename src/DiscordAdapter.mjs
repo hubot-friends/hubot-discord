@@ -2,7 +2,7 @@ import EventEmitter from 'node:events'
 import { Events, ShardEvents, Embed, EmbedBuilder, AttachmentBuilder, MessagePayload } from 'discord.js'
 import { TextMessage, Adapter } from 'hubot'
 const CONTENT_LENGTH_LIMIT = 2_000
-
+const DISCORD_ATTACHMENT_LIMIT = 10
 const mapToTextMessage = (message, botName, client) => {
     const content = message.content.replace(`<@${client?.user?.id}> `, `@${botName} `)
     const user = Object.assign({
@@ -76,7 +76,10 @@ class DiscordAdapter extends Adapter {
                         a.setDescription(f.description)
                         return a
                     })
-                    tasks.push(delegate({files: files}))
+                    while(files.length > 0) {
+                        const batch = files.splice(-files.length, DISCORD_ATTACHMENT_LIMIT)
+                        tasks.push(delegate({files: batch}))
+                    }
                 } else {
                     let payload = new MessagePayload(envelope.user.message, message)
                     payload = Object.assign(payload, message)

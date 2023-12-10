@@ -328,6 +328,46 @@ describe('Discord Adapter', () => {
         })
         client.emit('messageCreate', message)    
     })
+    it("Should limit batches to 10, discord has a limit of 10 attachments per message", (t, done) => {
+        let actualNumberOfBatches = 0
+        const message = {
+            channelId: 'test-room-4',
+            guildId: 'test-guild',
+            id: 'test-id',
+            content: '@test-bot Reply with > 10 files',
+            author: {
+                username: 'test-user'
+            },
+            attachments: new Map(),
+            async reply(message) {
+                actualNumberOfBatches++
+                if (actualNumberOfBatches === 1) {
+                    assert.equal(message.files.length, 10)
+                } else {
+                    assert.equal(message.files.length, 2)
+                    done()
+                }
+            }
+        }
+        message.attachments.set(`test-file.png`, {
+            '1140091176209363044': {
+                url: `https://cdn.discordapp.com/attachments/1023316778450964534/1140091176209363044/image.png`
+            }
+        })
+        
+        robot.respond(/Reply with > 10 files$/, (res) => {
+            const array = new Array(12).fill(0).map((_, i) => i)
+            const payload = {
+                files: array.map(i => ({
+                    file: Buffer.from('test', 'utf-8'),
+                    name: `test-${i}.ico`,
+                    description: `test-${i}.ico as an ICO file.`
+                }))
+            }
+            res.reply(payload)
+        })
+        client.emit('messageCreate', message)    
+    })
 
     it("If you want to use `discord.js`'s AttachmentBuilder to reply with files.", (t, done) => {
         const message = {
