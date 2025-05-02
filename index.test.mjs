@@ -44,6 +44,9 @@ class DiscordClient extends EventEmitter {
         this.guilds = new GuildManager(this)
         this.guilds.cache.set('test-guild', new Guild(this))
     }
+    destroy () {
+        
+    }
     async login(token){
         return token
     }

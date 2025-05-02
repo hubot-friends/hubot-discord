@@ -2,9 +2,12 @@ import { DiscordAdapter } from './src/DiscordAdapter.mjs'
 import { Client, GatewayIntentBits, Partials } from 'discord.js'
 export default {
     async use(robot) {
-        robot.config = {
-            HUBOT_DISCORD_TOKEN: process.env.HUBOT_DISCORD_TOKEN ?? null
+        if (!robot.config) {
+            robot.config = {}
         }
+        robot.config = Object.assign(robot.config, {
+            HUBOT_DISCORD_TOKEN: process.env.HUBOT_DISCORD_TOKEN ?? null
+        })
         const client = new Client({intents: [
             GatewayIntentBits.Guilds,
             GatewayIntentBits.DirectMessages,
