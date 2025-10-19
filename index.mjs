@@ -12,7 +12,8 @@ export default {
             GatewayIntentBits.Guilds,
             GatewayIntentBits.DirectMessages,
             GatewayIntentBits.GuildMessages,
-            GatewayIntentBits.GuildMessageReactions
+            GatewayIntentBits.GuildMessageReactions,
+            GatewayIntentBits.MessageContent
         ], partials: [Partials.Channel, Partials.Message, Partials.User, Partials.Reaction]})
         const adapter = new DiscordAdapter(robot, client)
         return adapter

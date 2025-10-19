@@ -25,8 +25,13 @@ class DiscordAdapter extends Adapter {
             this.emit('connected')
         })
     }
+    // This is now probably misnamed, since we're not concerned with *only* messages directed at the bot
     #wasToBot(message, botId) {
-        return message.mentions && !message.mentions.users.find(u => u.id == botId)
+        // message.mentions is always an object in discord.js; check users collection size
+        const users = message.mentions && message.mentions.users
+        if (!users || users.size === 0) return false
+        // Return true when the message mentions users but does NOT mention the bot
+        return !users.has(botId)
     }
     messageWasUpdated(oldMessage, newMessage) {
         if(newMessage.author.bot) return
