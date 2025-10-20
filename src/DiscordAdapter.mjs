@@ -29,18 +29,17 @@ class DiscordAdapter extends Adapter {
         return message.mentions && !message.mentions.users.find(u => u.id == botId)
     }
     messageWasUpdated(oldMessage, newMessage) {
-        if(newMessage.author.bot) return
-        if(this.#wasToBot(newMessage, this.client.user.id)) return
+        // Ignore messages from the bot itself
+        if(newMessage.author?.id === this.client.user.id) return
         this.robot.receive(mapToTextMessage(newMessage, this.robot.name || this.robot.alias, this.client))
     }
     messageWasReceived(message) {
-        if(message.author.bot) return
+        // Ignore messages from the bot itself
+        if(message.author?.id === this.client.user.id) return
         if(!message.guildId && message.content.indexOf(this.client.user.id) == -1) {
             message.content = `<@${this.client.user.id}> ${message.content}`
             message.mentions.users.set(this.client.user.id, this.client.user)
         }
-
-        if(this.#wasToBot(message, this.client.user.id)) return
         const textMessage = mapToTextMessage(message, this.robot.name || this.robot.alias, this.client)
         this.robot.receive(textMessage)
     }

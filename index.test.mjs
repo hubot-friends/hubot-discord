@@ -295,6 +295,86 @@ describe('Discord Adapter', () => {
         })
     })
 
+    it('robot.hear receives general messages in guilds', (t, done) => {
+        robot.hear(/hello everyone$/i, res => {
+            assert.equal(res.message.text, 'hello everyone')
+            done()
+        })
+        client.emit('messageCreate', {
+            content: 'hello everyone',
+            channelId: 'test-room-2.75',
+            guildId: 'test-guild',
+            author: {
+                username: 'test-user'
+            }
+        })
+    })
+
+    it('robot.hear receives messages that mention other users (not the bot)', (t, done) => {
+        robot.hear(/hello with mention/i, res => {
+            assert.equal(res.message.text, 'hello with mention <@other-user>')
+            done()
+        })
+        const users = {
+            _map: new Map([[
+                'other-user',
+                { id: 'other-user', username: 'someone-else' }
+            ]]),
+            find: fn => {
+                for (const v of users._map.values()) {
+                    if (fn(v)) return v
+                }
+                return undefined
+            },
+            set: (k, v) => users._map.set(k, v)
+        }
+        client.emit('messageCreate', {
+            content: 'hello with mention <@other-user>',
+            channelId: 'test-room-2.8',
+            guildId: 'test-guild',
+            mentions: { users },
+            author: {
+                username: 'test-user'
+            }
+        })
+    })
+
+    it('hears messages from other bots but ignores messages from itself', (t, done) => {
+        let heardOtherBot = false
+        let heardSelf = false
+        robot.hear(/bot says hi/, res => {
+            if (res.message.user.id === 'some-other-bot') heardOtherBot = true
+            if (res.message.user.id === client.user.id) heardSelf = true
+        })
+        // simulate a message from another bot
+        client.emit('messageCreate', {
+            content: 'bot says hi',
+            channelId: 'test-room-2.9',
+            guildId: 'test-guild',
+            author: {
+                id: 'some-other-bot',
+                username: 'some-bot',
+                bot: true
+            }
+        })
+        // simulate a message from self
+        client.emit('messageCreate', {
+            content: 'bot says hi',
+            channelId: 'test-room-3.0',
+            guildId: 'test-guild',
+            author: {
+                id: client.user.id,
+                username: 'self-bot',
+                bot: true
+            }
+        })
+        setImmediate(() => {
+            assert.equal(heardOtherBot, true)
+            assert.equal(heardSelf, false)
+            done()
+        })
+    })
+
     it("When you don't want to use a `discord.js` Class to just send files, you can send a payload with a files array instead.", (t, done) => {
         const message = {
             channelId: 'test-room-3',
