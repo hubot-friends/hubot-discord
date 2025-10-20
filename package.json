@@ -4,7 +4,8 @@
   "description": "A new Discord adapter for Hubot",
   "main": "index.mjs",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test --test-timeout=10000",
+    "start": "node --env-file=.env node_modules/.bin/hubot -f ./index.mjs -n jbot"
   },
   "repository": {
     "type": "git",
@@ -42,6 +43,6 @@
     "access": "public"
   },
   "dependencies": {
-    "discord.js": "^14.14.1"
+    "discord.js": "^14.23.2"
   }
 }
