@@ -33,6 +33,11 @@ Replace `<your-bot-token>` with your Discord bot token.
 
 Once your Hubot instance is running, you can interact with it through chat in the Discord channel you've added Hubot to.
 
+## robot.hear
+
+If you want to implement `robot.hear`ing, you'll have to enable **Message Content Intent** in the [Discord Developer Portal](https://discord.com/developers) in your Application -> Bot section.
+
+
 ## Contributing
 
 If you find a bug or have a feature request, please open an issue on the [GitHub repository](https://github.com/hubot-friends/hubot-discord). Pull requests are also welcome!
