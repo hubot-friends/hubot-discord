@@ -10,6 +10,55 @@ To use this adapter, you'll need to have [Node.js](https://nodejs.org/) and [npm
 npm install @hubot-friends/hubot-discord
 ```
 
+## Discord Setup
+
+Before you can use this adapter, you need to create a Discord application and bot. Follow these steps:
+
+### 1. Create a Discord Application
+
+1. Go to the [Discord Developer Portal](https://discord.com/developers/applications)
+2. Click the 'New Application' button in the top right
+3. Enter a name for your application and click 'Create'
+4. You'll be taken to your new application's dashboard
+
+### 2. Create a Bot
+
+1. In your application's dashboard, click on 'Bot' in the left sidebar
+2. Click the 'Add Bot' button and confirm by clicking 'Yes, do it!'
+3. Your bot is now created. You can customize its username and avatar here
+4. Under the 'Token' section, click 'Reset Token' to generate a new token
+5. Copy this token - you'll need it for the `HUBOT_DISCORD_TOKEN` environment variable
+   - **Important**: Never share this token publicly or commit it to version control
+
+### 3. Configure Bot Permissions
+
+1. Still in the 'Bot' section, scroll down to 'Privileged Gateway Intents'
+2. Enable the following intents based on your needs:
+   - **Message Content Intent**: Required if you want to use `robot.hear` to respond to messages
+   - **Server Members Intent**: Enable if your bot needs access to member information
+   - **Presence Intent**: Enable if your bot needs to track user presence
+
+### 4. Create an Installation URL for a Private App
+
+To add your bot to a Discord server, you need to create an OAuth2 authorization URL:
+
+1. In your application's dashboard, click on 'OAuth2' in the left sidebar
+2. Click on 'URL Generator' under OAuth2
+3. Under 'Scopes', select:
+   - `bot` - Required for bot functionality
+   - `applications.commands` - Optional, if you plan to use slash commands
+4. Under 'Bot Permissions', select the permissions your bot needs. At minimum:
+   - `Read Messages/View Channels` - To see channels
+   - `Send Messages` - To send messages
+   - `Read Message History` - To read message context
+   - `Add Reactions` - If your bot needs to add reactions
+   - You may need additional permissions depending on your bot's functionality
+5. Copy the generated URL at the bottom of the page
+6. Open this URL in a browser while logged into Discord
+7. Select the server you want to add the bot to from the dropdown
+8. Click 'Authorize' and complete any additional verification steps
+
+Your bot should now appear in your Discord server!
 
 ## Configuration
 
@@ -36,7 +85,6 @@ Once your Hubot instance is running, you can interact with it through chat in th
 ## robot.hear
 
 If you want to implement `robot.hear`ing, you'll have to enable **Message Content Intent** in the [Discord Developer Portal](https://discord.com/developers) in your Application -> Bot section.
-
 
 ## Contributing
 
