@@ -58,7 +58,7 @@ jobs:
     strategy:
       matrix:
         node-version: ['lts/*']      
-    if: github.ref == 'refs/heads/main' && ${{ success() }}
+    if: ${{ github.ref == 'refs/heads/main' && success() }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
