@@ -43,6 +43,6 @@
     "access": "public"
   },
   "dependencies": {
-    "discord.js": "^13.17.1"
+    "discord.js": "^14.25.1"
   }
 }
