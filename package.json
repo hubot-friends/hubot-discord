@@ -27,7 +27,7 @@
   },
   "homepage": "https://github.com/hubot-friends/hubot-discord#readme",
   "peerDependencies": {
-    "hubot": ">= 11"
+    "hubot": ">= 13"
   },
   "engines": {
     "node": ">= 18"
@@ -43,6 +43,6 @@
     "access": "public"
   },
   "dependencies": {
-    "discord.js": "^14.23.2"
+    "discord.js": "^13.17.1"
   }
 }
